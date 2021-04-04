@@ -19,9 +19,8 @@ import 'package:test/test.dart';
 import 'dart:io';
 import 'dart:async';
 import 'dart:convert';
-import 'package:resource/resource.dart' show Resource;
 
-MockWebServer _server;
+late MockWebServer _server;
 
 void main() {
   setUp(() {
@@ -180,7 +179,7 @@ void main() {
     _server.enqueue(delay: new Duration(milliseconds: 20), body: body20);
 
     Completer completer = new Completer();
-    List<String> responses = new List();
+    List<String> responses = [];
 
     _get("").then((res) async {
       // 40 milliseconds
@@ -241,21 +240,8 @@ void main() {
   });
 
   test("TLS info", () async {
-    var chainRes =
-        new Resource('package:mock_web_server/certificates/server_chain.pem');
-    List<int> chain = await chainRes.readAsBytes();
-
-    var keyRes =
-        new Resource('package:mock_web_server/certificates/server_key.pem');
-    List<int> key = await keyRes.readAsBytes();
-
-    Certificate certificate = new Certificate()
-      ..password = "dartdart"
-      ..key = key
-      ..chain = chain;
-
     MockWebServer _server =
-        new MockWebServer(port: 8029, certificate: certificate);
+        new MockWebServer(port: 8029, certificate: Certificate.included());
     await _server.start();
 
     RegExp url = new RegExp(r'(?:https:\/\/(?:127\.0\.0\.1):8029\/)');
@@ -271,27 +257,10 @@ void main() {
   test("TLS cert", () async {
     String body = "S03E08 You Are Not Safe";
 
-    var chainRes =
-        new Resource('package:mock_web_server/certificates/server_chain.pem');
-    List<int> chain = await chainRes.readAsBytes();
-
-    var keyRes =
-        new Resource('package:mock_web_server/certificates/server_key.pem');
-    List<int> key = await keyRes.readAsBytes();
-
-    Certificate certificate = new Certificate()
-      ..password = "dartdart"
-      ..key = key
-      ..chain = chain;
-
     MockWebServer _server =
-        new MockWebServer(port: 8029, certificate: certificate);
+        new MockWebServer(port: 8029, certificate: Certificate.included());
     await _server.start();
     _server.enqueue(body: body);
-
-    var certRes =
-        new Resource('package:mock_web_server/certificates/trusted_certs.pem');
-    List<int> cert = await certRes.readAsBytes();
 
     // Calling without the proper security context
     var clientErr = new HttpClient();
@@ -300,10 +269,7 @@ void main() {
         throwsA(new TypeMatcher<HandshakeException>()));
 
     // Testing with security context
-    SecurityContext clientContext = new SecurityContext()
-      ..setTrustedCertificatesBytes(cert);
-
-    var client = new HttpClient(context: clientContext);
+    var client = new HttpClient(context: DefaultSecurityContext());
     var request = await client.getUrl(Uri.parse(_server.url));
     String response = await _read(await request.close());
 
