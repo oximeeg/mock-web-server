@@ -68,6 +68,38 @@ class Certificate {
   List<int> chain;
   List<int> key;
   String password;
+
+  Certificate({this.chain, this.key, this.password = "dartdart"});
+
+  factory Certificate.make({serverChain, serverKey}) {
+    var chainRes = new File(serverChain);
+    List<int> chain = chainRes.readAsBytesSync();
+
+    var keyRes = new File(serverKey);
+    List<int> key = keyRes.readAsBytesSync();
+
+    Certificate certificate = new Certificate(key: key, chain: chain);
+    return certificate;
+  }
+
+  factory Certificate.included() {
+    var chainRes = new File('lib/certificates/server_chain.pem');
+    List<int> chain = chainRes.readAsBytesSync();
+
+    var keyRes = new File('lib/certificates/server_key.pem');
+    List<int> key = keyRes.readAsBytesSync();
+
+    Certificate certificate = new Certificate(key: key, chain: chain);
+    return certificate;
+  }
+}
+
+abstract class DefaultSecurityContext extends SecurityContext {
+  factory DefaultSecurityContext() {
+    var certRes = new File('lib/certificates/trusted_certs.pem');
+    List<int> cert = certRes.readAsBytesSync();
+    return new SecurityContext()..setTrustedCertificatesBytes(cert);
+  }
 }
 
 /// A Web Server that can be scripted. Useful for Integration Tests, for demos,

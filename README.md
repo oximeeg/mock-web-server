@@ -1,4 +1,5 @@
 # mock_web_server
+
 A flexible Dart web server that can be used to script tests and web server interactions
 
 ## Summary
@@ -10,20 +11,23 @@ web server.
 MockWebServer aims to facility testing by offering a flexible stand alone
 Server that will respond with a given script (or forward the request to your dispatcher).
 
-MockWebServer is based on the 
-[library](https://github.com/square/okhttp/tree/master/mockwebserver) 
+MockWebServer is based on the
+[library](https://github.com/square/okhttp/tree/master/mockwebserver)
 of the same name created by Square for Java.
 
 ## Usage
 
 ### Starting it
+
 MockWebServer can run in a given port or an ephemeral one
+
 ```dart
 new MockWebServer(); // Will use an ephemeral port picked by the system
 new MockWebServer(port: 8081); // Will use 8081
 ```
 
 To start it just do
+
 ```dart
 MockWebServer server = new MockWebServer();
 server.start();
@@ -39,7 +43,8 @@ server.host; // 127.0.0.1
 ```
 
 ### Adding responses to the queue
-Once the server is started, you can queue the responses that you want. **The response queue is 
+
+Once the server is started, you can queue the responses that you want. **The response queue is
 First In First Out**
 
 ```dart
@@ -71,6 +76,7 @@ server.enqueueResponse(mockResponse);
 ```
 
 ### Delaying the response
+
 To test timeouts or race conditions you may want to have the server take some time
 
 ```dart
@@ -86,6 +92,7 @@ expect(response.statusCode, 201);
 ```
 
 ### Validating that the request was correct
+
 You may want to check that your app is sending the correct requests. To do so you can obtain the
 requests that have been made to the server. **The request queue is Last In First Out**
 
@@ -108,7 +115,7 @@ expect(server.takeRequest().uri.path, "/third");
 
 ### Using a dispatcher for fine-grained routing
 
-If you want more control than what the FIFO queue offers, you can set a dispatcher and set 
+If you want more control than what the FIFO queue offers, you can set a dispatcher and set
 the logic there.
 
 ```dart
@@ -138,23 +145,18 @@ expect(response.statusCode, 201);
 ```
 
 ### TLS
-You can start the server using TLS by passing the `certificate` parameter 
-when creating the instance of MockWebServer. For example using the included certificates and the
-`resource` library you would do
+
+You can start the server using TLS by passing the `certificate` parameter
+when creating the instance of MockWebServer. For example using the included certificates you would do
 
 ```dart
-var chainRes =
-    new Resource('package:mock_web_server/certificates/server_chain.pem');
-List<int> chain = await chainRes.readAsBytes();
-
-var keyRes =
-    new Resource('package:mock_web_server/certificates/server_key.pem');
-List<int> key = await keyRes.readAsBytes();
-
-Certificate certificate = new Certificate()
+Certificate certificate = Certificate.make(serverChain: 'your_server_chain.pem', serverKey: 'your_server_key.pem')
   ..password = "dartdart"
   ..key = key
   ..chain = chain;
+
+// To use the included certificates:
+// Certificate certificate = Certificate.included();
 
 MockWebServer _server =
     new MockWebServer(certificate: certificate);
@@ -165,12 +167,15 @@ proper `SecurityContext`, for example using the included `trusted_certs.pem`
 
 ```dart
 var certRes =
-    new Resource('package:mock_web_server/certificates/trusted_certs.pem');
+    new File('your_trusted_certs.pem');
 List<int> cert = await certRes.readAsBytes();
 
 SecurityContext clientContext = new SecurityContext()
    ..setTrustedCertificatesBytes(cert);
-    
+
+// To use the included trusted_certs.pem:
+// SecurityContext clientContext = DefaultSecurityContext();
+
 var client = new HttpClient(context: clientContext);
 
 ```  
@@ -178,8 +183,9 @@ var client = new HttpClient(context: clientContext);
 Please check the tests of MockWebServer to see a complete example of this.
 
 ### IPv6
-If want to use IPv6, you can pass `addressType: InternetAddressType.IP_V6` in the 
-constructor to have the server use it. Keep in mind that the `host` property 
+
+If want to use IPv6, you can pass `addressType: InternetAddressType.IP_V6` in the
+constructor to have the server use it. Keep in mind that the `host` property
 will then be `::1` instead of `127.0.0.1`.  
 
 ```dart
@@ -189,6 +195,7 @@ MockWebServer _server =
 ```
 
 ### Setting a default response
+
 In some scenarions, if there's nothing on queue and there's no dispatcher, you
 may want the server to default to a response (e.g `404`) instead of throwing an
 exception.
@@ -198,4 +205,5 @@ _server.defaultResponse = MockResponse()..httpCode = 404;
 ```
 
 ### Stopping
+
 During the `tearDown` of your tests you should stop the server. `server.shutdown()` will do.
