@@ -20,7 +20,7 @@ import 'dart:io';
 import 'dart:async';
 import 'dart:convert';
 
-MockWebServer _server;
+late MockWebServer _server;
 
 void main() {
   setUp(() {
@@ -179,7 +179,7 @@ void main() {
     _server.enqueue(delay: new Duration(milliseconds: 20), body: body20);
 
     Completer completer = new Completer();
-    List<String> responses = new List();
+    List<String> responses = [];
 
     _get("").then((res) async {
       // 40 milliseconds

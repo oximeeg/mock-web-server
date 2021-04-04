@@ -48,18 +48,18 @@ typedef Future<MockResponse> Dispatcher(HttpRequest request);
 /// request. Used with `MockWebServer.enqueueResponse(MockResponse response)` or
 /// a `Dispatcher`.
 class MockResponse {
-  Object body;
-  int httpCode;
-  Map<String, String> headers;
-  Duration delay;
+  Object? body;
+  late int httpCode;
+  Map<String, String>? headers;
+  Duration? delay;
 }
 
 /// Contains the info of a request received by the MockWebServer instance.
 class StoredRequest {
-  String body;
-  String method;
-  Uri uri;
-  Map<String, String> headers;
+  String? body;
+  String? method;
+  late Uri uri;
+  late Map<String, String> headers;
 }
 
 /// Represents a TLS certificate. `chain` and `key` are expected to be the bytes
@@ -69,9 +69,10 @@ class Certificate {
   List<int> key;
   String password;
 
-  Certificate({this.chain, this.key, this.password = "dartdart"});
+  Certificate(
+      {required this.chain, required this.key, this.password = "dartdart"});
 
-  factory Certificate.make({serverChain, serverKey}) {
+  factory Certificate.make({required serverChain, required serverKey}) {
     var chainRes = new File(serverChain);
     List<int> chain = chainRes.readAsBytesSync();
 
@@ -98,7 +99,8 @@ abstract class DefaultSecurityContext extends SecurityContext {
   factory DefaultSecurityContext() {
     var certRes = new File('lib/certificates/trusted_certs.pem');
     List<int> cert = certRes.readAsBytesSync();
-    return new SecurityContext()..setTrustedCertificatesBytes(cert);
+    return new SecurityContext() as DefaultSecurityContext
+      ..setTrustedCertificatesBytes(cert);
   }
 }
 
@@ -132,18 +134,18 @@ class MockWebServer {
   int get requestCount => _requestCount;
 
   /// Set this if using the queue is not enough for your requirements.
-  Dispatcher dispatcher;
+  Dispatcher? dispatcher;
 
   /// Default response if there's nothing on the queue and no dispatcher
-  MockResponse defaultResponse;
+  MockResponse? defaultResponse;
 
-  HttpServer _server;
+  late HttpServer _server;
   Queue<MockResponse> _responses = new Queue();
   Queue<StoredRequest> _requests = new Queue();
-  int _port;
+  late int _port;
   bool _https = false;
-  Certificate _certificate;
-  InternetAddressType _addressType;
+  late Certificate _certificate;
+  InternetAddressType? _addressType;
   int _requestCount = 0;
 
   /// Creates an instance of a `MockWebServer`. If a [port] is defined, it
@@ -162,7 +164,7 @@ class MockWebServer {
   /// is used the address will be [:::1:]
   MockWebServer(
       {port = 0,
-      Certificate certificate,
+      Certificate? certificate,
       addressType = InternetAddressType.IPv4}) {
     _port = port;
     if (certificate != null) {
@@ -198,8 +200,8 @@ class MockWebServer {
   enqueue(
       {Object body = "",
       int httpCode = 200,
-      Map<String, String> headers,
-      Duration delay}) {
+      Map<String, String>? headers,
+      Duration? delay}) {
     _responses.add(new MockResponse()
       ..body = body
       ..headers = headers
@@ -238,7 +240,7 @@ class MockWebServer {
 
       if (dispatcher != null) {
         assert(dispatcher is Dispatcher);
-        MockResponse response = await dispatcher(request);
+        MockResponse response = await dispatcher!(request);
         _process(request, response);
         continue;
       }
@@ -254,7 +256,7 @@ class MockWebServer {
         _responses.removeFirst();
       }
 
-      _process(request, response);
+      _process(request, response!);
     }
   }
 
@@ -288,7 +290,7 @@ class MockWebServer {
     if (response.delay != null) {
       Completer completer = new Completer();
 
-      new Timer(response.delay, () {
+      new Timer(response.delay!, () {
         completer.complete();
       });
 
@@ -296,7 +298,7 @@ class MockWebServer {
     }
 
     if (response.headers != null) {
-      response.headers.forEach((name, value) {
+      response.headers!.forEach((name, value) {
         request.response.headers.add(name, value);
       });
     }
