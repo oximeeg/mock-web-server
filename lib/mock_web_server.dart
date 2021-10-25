@@ -303,9 +303,17 @@ class MockWebServer {
       });
     }
 
-    request.response
-      ..statusCode = response.httpCode
-      ..write(response.body)
-      ..close();
+    request.response.statusCode = response.httpCode;
+
+    final body = response.body;
+    if (body is Stream<List<int>>) {
+      request.response
+          .addStream(body)
+          .then((response) => response.close());
+    } else {
+      request.response
+        ..write(response.body)
+        ..close();
+    }
   }
 }

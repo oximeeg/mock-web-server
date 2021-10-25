@@ -44,6 +44,13 @@ void main() {
     expect(await _read(response), "something");
   });
 
+  test("Set body stream", () async {
+    final f = File('../mock-web-server/test/test.jpg');
+    _server.enqueue(body: f.openRead());
+    HttpClientResponse response = await _get("");
+    expect(await _readStream(response), f.readAsBytesSync());
+  });
+
   test("Set headers", () async {
     Map<String, String> headers = new Map();
     headers["X-Server"] = "MockDart";
@@ -323,4 +330,18 @@ Future<String> _read(HttpClientResponse response) async {
 
   await completer.future;
   return body.toString();
+}
+
+Future<List<int>> _readStream(HttpClientResponse response) async {
+  final body = <int>[];
+  final completer = Completer<List<int>>();
+
+  response.listen((event) {
+    body.addAll(event);
+  }, onDone: () {
+    completer.complete(body);
+  });
+
+  await completer.future;
+  return body;
 }
