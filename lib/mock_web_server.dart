@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-import 'dart:convert';
-import 'dart:io';
 import 'dart:async';
 import 'dart:collection';
+import 'dart:convert';
+import 'dart:io';
 
 /// A `Dispatcher` is used to customize the responses of the `MockWebServer`
 /// further than using a queue.
@@ -28,16 +28,16 @@ import 'dart:collection';
 /// It is called with an `HttpRequest` object every time the `MockWebServer`
 /// receives a request.
 ///
-///   var dispatcher = (HttpRequest request) {
+///   final dispatcher = (HttpRequest request) {
 ///      if (request.uri.path == "/users") {
-///          return new MockResponse()
+///          return MockResponse()
 ///          ..httpCode = 200
 ///          ..body = "working";
 ///      } else if (request.uri.path == "/users/1") {
-///          return new MockResponse()..httpCode = 201;
+///          return MockResponse()..httpCode = 201;
 ///      }
 ///
-///      return new MockResponse()..httpCode = 404;
+///      return MockResponse()..httpCode = 404;
 ///   };
 ///
 ///  _server.dispatcher = dispatcher;
@@ -69,45 +69,39 @@ class Certificate {
   List<int> key;
   String password;
 
-  Certificate(
-      {required this.chain, required this.key, this.password = "dartdart"});
+  Certificate({
+    required this.chain,
+    required this.key,
+    this.password = "dartdart",
+  });
 
-  factory Certificate.make({required serverChain, required serverKey}) {
-    var chainRes = new File(serverChain);
-    List<int> chain = chainRes.readAsBytesSync();
-
-    var keyRes = new File(serverKey);
-    List<int> key = keyRes.readAsBytesSync();
-
-    Certificate certificate = new Certificate(key: key, chain: chain);
-    return certificate;
+  factory Certificate.make({
+    required String serverChain,
+    required String serverKey,
+  }) {
+    final chain = File(serverChain).readAsBytesSync();
+    final key = File(serverKey).readAsBytesSync();
+    return Certificate(key: key, chain: chain);
   }
 
   factory Certificate.included() {
-    var chainRes = new File('lib/certificates/server_chain.pem');
-    List<int> chain = chainRes.readAsBytesSync();
-
-    var keyRes = new File('lib/certificates/server_key.pem');
-    List<int> key = keyRes.readAsBytesSync();
-
-    Certificate certificate = new Certificate(key: key, chain: chain);
-    return certificate;
+    final chain = File('lib/certificates/server_chain.pem').readAsBytesSync();
+    final key = File('lib/certificates/server_key.pem').readAsBytesSync();
+    return Certificate(key: key, chain: chain);
   }
 }
 
-abstract class DefaultSecurityContext extends SecurityContext {
-  factory DefaultSecurityContext() {
-    var certRes = new File('lib/certificates/trusted_certs.pem');
-    List<int> cert = certRes.readAsBytesSync();
-    return new SecurityContext() as DefaultSecurityContext
-      ..setTrustedCertificatesBytes(cert);
+extension SecurityContextExtension on SecurityContext {
+  SecurityContext get defaultContext {
+    final cert = File('lib/certificates/trusted_certs.pem').readAsBytesSync();
+    return SecurityContext()..setTrustedCertificatesBytes(cert);
   }
 }
 
 /// A Web Server that can be scripted. Useful for Integration Tests, for demos,
 /// and to reproduce edge cases.
 ///
-///    _server = new MockWebServer();
+///    _server = MockWebServer();
 ///    _server.start();
 ///
 ///    _server.enqueue(body: "Hello World", httpCode: 200);
@@ -140,8 +134,8 @@ class MockWebServer {
   MockResponse? defaultResponse;
 
   late HttpServer _server;
-  Queue<MockResponse> _responses = new Queue();
-  Queue<StoredRequest> _requests = new Queue();
+  Queue<MockResponse> _responses = Queue();
+  Queue<StoredRequest> _requests = Queue();
   late int _port;
   bool _https = false;
   late Certificate _certificate;
@@ -162,10 +156,11 @@ class MockWebServer {
   /// [addressType] allows you to decide if the Internet Address should be IPv4 or
   /// IPv6. If [:IP_V4:] is used, then the address will be [:127.0.0.1:], if [:IP_V6]
   /// is used the address will be [:::1:]
-  MockWebServer(
-      {port = 0,
-      Certificate? certificate,
-      addressType = InternetAddressType.IPv4}) {
+  MockWebServer({
+    int port = 0,
+    Certificate? certificate,
+    InternetAddressType addressType = InternetAddressType.IPv4,
+  }) {
     _port = port;
     if (certificate != null) {
       _https = true;
@@ -178,12 +173,12 @@ class MockWebServer {
   /// it will try to bind to that `port`, otherwise it will pick any available
   /// port.
   start() async {
-    InternetAddress address = _addressType == InternetAddressType.IPv4
+    final address = _addressType == InternetAddressType.IPv4
         ? InternetAddress.loopbackIPv4
         : InternetAddress.loopbackIPv6;
 
     if (_https) {
-      SecurityContext context = new SecurityContext()
+      final context = SecurityContext()
         ..useCertificateChainBytes(_certificate.chain)
         ..usePrivateKeyBytes(_certificate.key, password: _certificate.password);
 
@@ -197,12 +192,13 @@ class MockWebServer {
 
   /// Creates a `MockResponse` with the passed parameters, and adds it to the
   /// queue. The queue is First In First Out (FIFO).
-  enqueue(
-      {Object body = "",
-      int httpCode = 200,
-      Map<String, String>? headers,
-      Duration? delay}) {
-    _responses.add(new MockResponse()
+  enqueue({
+    Object body = "",
+    int httpCode = 200,
+    Map<String, String>? headers,
+    Duration? delay,
+  }) {
+    _responses.add(MockResponse()
       ..body = body
       ..headers = headers
       ..httpCode = httpCode
@@ -219,9 +215,9 @@ class MockWebServer {
   /// throw an exception if there aren't any requests available.
   StoredRequest takeRequest() {
     if (_requests.isEmpty) {
-      throw new Exception("No requests on record");
+      throw Exception("No requests on record");
     }
-    var request = _requests.first;
+    final request = _requests.first;
     _requests.removeFirst();
 
     return request;
@@ -240,13 +236,13 @@ class MockWebServer {
 
       if (dispatcher != null) {
         assert(dispatcher is Dispatcher);
-        MockResponse response = await dispatcher!(request);
+        final response = await dispatcher!(request);
         _process(request, response);
         continue;
       }
 
       if (_responses.isEmpty && defaultResponse == null) {
-        throw new Exception("No responses in queue and no default response");
+        throw Exception("No responses in queue and no default response");
       }
 
       var response = defaultResponse;
@@ -262,10 +258,9 @@ class MockWebServer {
 
   /// Transform an [HttpRequest] into a [StoredRequest]
   Future<StoredRequest> _toStoredRequest(HttpRequest request) async {
-    Map<String, String> headers = new Map();
-
-    StringBuffer body = new StringBuffer();
-    Completer<String> completer = new Completer();
+    final headers = Map<String, String>();
+    final body = StringBuffer();
+    final completer = Completer<String>();
 
     utf8.decoder.bind(request).listen((data) {
       body.write(data);
@@ -277,7 +272,7 @@ class MockWebServer {
       headers[key] = values.join(", ");
     });
 
-    return new StoredRequest()
+    return StoredRequest()
       ..method = request.method
       ..headers = headers
       ..uri = request.uri
@@ -288,9 +283,9 @@ class MockWebServer {
   /// returning the response to the client.
   _process(HttpRequest request, MockResponse response) async {
     if (response.delay != null) {
-      Completer completer = new Completer();
+      final completer = Completer();
 
-      new Timer(response.delay!, () {
+      Timer(response.delay!, () {
         completer.complete();
       });
 
@@ -307,9 +302,7 @@ class MockWebServer {
 
     final body = response.body;
     if (body is Stream<List<int>>) {
-      request.response
-          .addStream(body)
-          .then((response) => response.close());
+      request.response.addStream(body).then((response) => response.close());
     } else {
       request.response
         ..write(response.body)

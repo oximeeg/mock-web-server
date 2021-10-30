@@ -22,14 +22,14 @@ of the same name created by Square for Java.
 MockWebServer can run in a given port or an ephemeral one
 
 ```dart
-new MockWebServer(); // Will use an ephemeral port picked by the system
-new MockWebServer(port: 8081); // Will use 8081
+MockWebServer(); // Will use an ephemeral port picked by the system
+MockWebServer(port: 8081); // Will use 8081
 ```
 
 To start it just do
 
 ```dart
-MockWebServer server = new MockWebServer();
+MockWebServer server = MockWebServer();
 server.start();
 ```
 
@@ -55,7 +55,7 @@ server.enqueue(httpCode: 401);
 server.enqueue(body: '{ "message" : "hi"}');
 
 // HTTP 200 with empty body and some header
-Map<String, String> headers = new Map();
+final headers = Map<String, String>();
 headers["X-Server"] = "MockDart";
 server.enqueue(headers: headers);
 
@@ -63,14 +63,14 @@ server.enqueue(headers: headers);
 server.enqueue(httpCode: 201, body: "answer", headers: headers, duration: duration);
 
 // You can always call enqueueResponse() to directly enqueue a MockResponse
-Map<String, String> headers = new Map();
+final headers = Map<String, String>();
 headers["X-Server"] = "MockDart";
 
-var mockResponse = new MockResponse()
+final mockResponse = MockResponse()
   ..httpCode = 201
   ..body = "Created"
   ..headers = headers
-  ..delay = new Duration(seconds: 2);
+  ..delay = Duration(seconds: 2);
 
 server.enqueueResponse(mockResponse);
 ```
@@ -80,11 +80,10 @@ server.enqueueResponse(mockResponse);
 To test timeouts or race conditions you may want to have the server take some time
 
 ```dart
-server.enqueue(delay: new Duration(seconds: 2), httpCode: 201);
-Stopwatch stopwatch = new Stopwatch();
-stopwatch.start();
+server.enqueue(delay: Duration(seconds: 2), httpCode: 201);
+final stopwatch = Stopwatch()..start();;
 
-HttpClientResponse response = request(path: "");
+final response = request(path: "");
 
 stopwatch.stop();
 expect(stopwatch.elapsed.inMilliseconds, greaterThanOrEqualTo(2000));
@@ -106,7 +105,7 @@ request(path: "second");
 request(path: "third");
 
 // takeRequest is FIFO
-// You should probably assign takeRequest() to a var so that you can 
+// You should probably assign takeRequest() to a var so that you can
 // validate multiple things.
 expect(server.takeRequest().headers['x-header'], "nosniff");
 expect(server.takeRequest().method, "GET");
@@ -119,21 +118,21 @@ If you want more control than what the FIFO queue offers, you can set a dispatch
 the logic there.
 
 ```dart
-var dispatcher = (HttpRequest request) {
+final dispatcher = (HttpRequest request) {
   if (request.uri.path == "/users") {
-    return new MockResponse()
+    return MockResponse()
       ..httpCode = 200
       ..body = "working";
   } else if (request.uri.path == "/users/1") {
-    return new MockResponse()..httpCode = 201;
+    return MockResponse()..httpCode = 201;
   }
 
-  return new MockResponse()..httpCode = 404;
+  return MockResponse()..httpCode = 404;
 };
 
 server.dispatcher = dispatcher;
 
-HttpClientResponse response = request(path: "unknown");
+final response = request(path: "unknown");
 expect(response.statusCode, 404);
 
 response = request(path: "users");
@@ -150,7 +149,7 @@ You can start the server using TLS by passing the `certificate` parameter
 when creating the instance of MockWebServer. For example using the included certificates you would do
 
 ```dart
-Certificate certificate = Certificate.make(serverChain: 'your_server_chain.pem', serverKey: 'your_server_key.pem')
+final certificate = Certificate.make(serverChain: 'your_server_chain.pem', serverKey: 'your_server_key.pem')
   ..password = "dartdart"
   ..key = key
   ..chain = chain;
@@ -158,27 +157,27 @@ Certificate certificate = Certificate.make(serverChain: 'your_server_chain.pem',
 // To use the included certificates:
 // Certificate certificate = Certificate.included();
 
-MockWebServer _server =
-    new MockWebServer(certificate: certificate);
+final _server =
+    MockWebServer(certificate: certificate);
 ```
 
 If you do so, and your client validates the certs, you will need to use a
 proper `SecurityContext`, for example using the included `trusted_certs.pem`
 
 ```dart
-var certRes =
-    new File('your_trusted_certs.pem');
-List<int> cert = await certRes.readAsBytes();
+final certRes =
+    File('your_trusted_certs.pem');
+final cert = await certRes.readAsBytes();
 
-SecurityContext clientContext = new SecurityContext()
+final clientContext = SecurityContext()
    ..setTrustedCertificatesBytes(cert);
 
 // To use the included trusted_certs.pem:
-// SecurityContext clientContext = DefaultSecurityContext();
+// SecurityContext clientContext = SecurityContext().defaultContext;
 
-var client = new HttpClient(context: clientContext);
+final client = HttpClient(context: clientContext);
 
-```  
+```
 
 Please check the tests of MockWebServer to see a complete example of this.
 
@@ -186,11 +185,11 @@ Please check the tests of MockWebServer to see a complete example of this.
 
 If want to use IPv6, you can pass `addressType: InternetAddressType.IP_V6` in the
 constructor to have the server use it. Keep in mind that the `host` property
-will then be `::1` instead of `127.0.0.1`.  
+will then be `::1` instead of `127.0.0.1`.
 
 ```dart
-MockWebServer _server =
-        new MockWebServer(port: 8030, addressType: InternetAddressType.IP_V6);
+final _server =
+        MockWebServer(port: 8030, addressType: InternetAddressType.IP_V6);
 
 ```
 
